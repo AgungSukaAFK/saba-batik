@@ -2,59 +2,59 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Quote, Heart, Code, Music, BookOpen, Coffee } from "lucide-react";
+import { Quote, Heart, Code, BookOpen, Coffee, Gamepad } from "lucide-react";
 
-// --- DATA ANGGOTA KELOMPOK (EDIT DISINI) ---
 const teamMembers = [
   {
     id: 1,
-    name: "M. Agung Maulana", // Contoh, sesuaikan dengan nama aslimu
-    npm: "2025430001",
+    name: "M. Agung Maulana",
+    npm: "1101221114",
     role: "Lead Developer",
-    photo: "/team/member-1.jpg", // Ganti dengan path foto aslimu nanti
-    hobby: "Coding & Swimming",
+    photo: "/images/anggota/agung.jpeg",
+    hobby: "Coding, Swimming, Gaming, Loving",
     motto: "Talk is cheap. Show me the code.",
-    icon: Code, // Ikon hobi (bisa diganti)
+    icon: Code,
   },
   {
     id: 2,
-    name: "Anggota Dua",
-    npm: "2025430002",
+    name: "Yofa Firmansyah",
+    npm: "1101221182",
     role: "UI/UX Designer",
-    photo: "/team/member-2.jpg",
-    hobby: "Sketching",
-    motto: "Design is not just what it looks like, it's how it works.",
+    photo: "/images/anggota/yofa.jpeg",
+    hobby: "Swimming",
+    motto:
+      "Teatap lakuin apa yang menurut lo baik selagi ga ngerugiin orang lain.",
     icon: Heart,
   },
   {
     id: 3,
-    name: "Anggota Tiga",
-    npm: "2025430003",
+    name: "Nur Dela Handayani",
+    npm: "1102221016",
     role: "System Analyst",
-    photo: "/team/member-3.jpg",
+    photo: "/images/anggota/dela.jpeg",
     hobby: "Membaca Buku",
-    motto: "Stay hungry, stay foolish.",
+    motto: "Temukan kebahagiaan dalam hal-hal sederhana.",
     icon: BookOpen,
   },
   {
     id: 4,
-    name: "Anggota Empat",
-    npm: "2025430004",
+    name: "Hanipah",
+    npm: "1102221026",
     role: "Database Engineer",
-    photo: "/team/member-4.jpg",
-    hobby: "Traveling & Kopi",
-    motto: "Life begins at the end of your comfort zone.",
+    photo: "/images/anggota/hani.jpeg",
+    hobby: "Memasak",
+    motto: "Don't rely on  the past because what you will face is the future.",
     icon: Coffee,
   },
   {
     id: 5,
-    name: "Anggota Lima",
-    npm: "2025430005",
-    role: "Project Manager",
-    photo: "/team/member-5.jpg",
-    hobby: "Musik",
-    motto: "Simplicity is the ultimate sophistication.",
-    icon: Music,
+    name: "Febri Ari Wijaya",
+    npm: "1101221132",
+    role: "QA Engineer",
+    photo: "/images/anggota/hani.jpeg",
+    hobby: "Gaming",
+    motto: " hidup untuk belajar, belajar untuk hidup.",
+    icon: Gamepad,
   },
 ];
 
@@ -88,8 +88,7 @@ export default function AboutPage() {
                   src={member.photo}
                   alt={member.name}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105 group-hover:grayscale-0 grayscale"
-                  // Note: Hapus 'grayscale' di class di atas jika ingin foto selalu berwarna
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
 
                 {/* Overlay Gradient (Muncul saat hover) */}

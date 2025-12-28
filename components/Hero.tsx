@@ -1,159 +1,266 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Layers, Palette, Scissors } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowRight, Layers, Palette, Scissors, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- DATA DEMO ---
+const DEMO_LOOKS = [
+  {
+    id: 1,
+    name: "Semen Merah",
+    color: "#B91C1C", // Red 700
+    pattern: "/images/batik/semen.png",
+    price: "Rp 185.000",
+  },
+  {
+    id: 2,
+    name: "Liong Biru",
+    color: "#1D4ED8", // Blue 700
+    pattern: "/images/batik/liong.png",
+    price: "Rp 210.000",
+  },
+  {
+    id: 3,
+    name: "Hokokai Hitam",
+    color: "#18181B", // Zinc 950
+    pattern: "/images/batik/hokokai.png",
+    price: "Rp 250.000",
+  },
+];
 
 export default function Hero() {
-  return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-      {/* Background Decor - Gradient Blobs */}
-      <div className="absolute top-0 right-0 -z-10 w-150 h-150 bg-amber-400/20 rounded-full blur-[100px] opacity-50 translate-x-1/3 -translate-y-1/4" />
-      <div className="absolute bottom-0 left-0 -z-10 w-100 h-100 bg-blue-400/10 rounded-full blur-[80px] opacity-30 -translate-x-1/3 translate-y-1/4" />
+  const [activeLookIndex, setActiveLookIndex] = useState(0);
+  const activeLook = DEMO_LOOKS[activeLookIndex];
 
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col lg:flex-row items-center gap-16">
-          {/* Left Content */}
+  // Auto-play ganti motif setiap 3 detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveLookIndex((prev) => (prev + 1) % DEMO_LOOKS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    // REVISI 1: Gunakan h-screen pada desktop agar fit tanpa scroll
+    <section className="relative pt-32 pb-12 lg:py-0 lg:h-screen flex items-center overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 -z-10 w-150 h-150 bg-amber-400/20 rounded-full blur-[100px] opacity-50 translate-x-1/3 -translate-y-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 -z-10 w-100 h-100 bg-blue-400/10 rounded-full blur-[80px] opacity-30 -translate-x-1/3 translate-y-1/4 pointer-events-none" />
+
+      <div className="container mx-auto px-6 h-full flex items-center">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
+          {/* --- LEFT CONTENT --- */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="flex-1 text-center lg:text-left space-y-8"
+            className="flex-1 text-center lg:text-left space-y-6 lg:space-y-8 relative z-10"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-medium">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-medium border border-amber-200 dark:border-amber-800">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
               </span>
-              Teknologi Simulasi Batik No.1
+              Teknologi Simulasi Batik No.1 Dari Cipocok
             </div>
 
-            <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-[1.15]">
+            <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-[1.15] font-serif">
               Lestarikan Budaya, <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-600 to-orange-500">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500">
                 Rancang Karyamu.
               </span>
             </h1>
 
             <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Kombinasikan motif tradisional dengan gaya modern secara
-              real-time. Pilih bahan, sesuaikan warna, dan lihat estimasi harga
-              transparan dalam hitungan detik.
+              Platform simulasi batik pertama yang memungkinkan Anda memadukan
+              motif tradisional nusantara dengan gaya modern secara real-time.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
               <Button
                 size="lg"
-                className="rounded-full h-12 px-8 bg-amber-600 hover:bg-amber-700 text-white text-base"
+                className="rounded-full h-14 px-8 bg-amber-600 hover:bg-amber-700 text-white text-base shadow-lg shadow-amber-900/20 w-full sm:w-auto"
+                asChild
               >
-                Mulai Desain Sekarang
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href="/simulasi">
+                  Mulai Desain Sekarang
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full h-12 px-8 border-zinc-200 dark:border-zinc-800"
+                className="rounded-full h-14 px-8 border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur w-full sm:w-auto"
+                asChild
               >
-                Pelajari Cara Kerja
+                <Link href="/gallery">Lihat Galeri Motif</Link>
               </Button>
             </div>
 
-            {/* Stats / Trust */}
-            <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 text-zinc-500 dark:text-zinc-500">
+            <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-center lg:justify-start gap-6 lg:gap-12 text-zinc-500 dark:text-zinc-400">
               <div className="flex items-center gap-2">
-                <Layers size={18} />
-                <span className="text-sm font-medium">Multi-Layer</span>
+                <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                  <Layers size={18} className="text-amber-600" />
+                </div>
+                <span className="text-sm font-medium">Layer Realistis</span>
               </div>
               <div className="flex items-center gap-2">
-                <Palette size={18} />
-                <span className="text-sm font-medium">Custom Warna</span>
+                <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                  <Palette size={18} className="text-amber-600" />
+                </div>
+                <span className="text-sm font-medium">Warna Dinamis</span>
               </div>
               <div className="flex items-center gap-2">
-                <Scissors size={18} />
-                <span className="text-sm font-medium">8+ Jenis Kain</span>
+                <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                  <Scissors size={18} className="text-amber-600" />
+                </div>
+                <span className="text-sm font-medium">Custom Size</span>
               </div>
             </div>
           </motion.div>
 
-          {/* Right Visual (Abstract Representation of App) */}
+          {/* --- RIGHT VISUAL (AUTO PLAY DEMO) --- */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex-1 w-full max-w-lg lg:max-w-none relative"
+            className="flex-1 w-full max-w-[450px] lg:max-w-[500px] relative z-10"
           >
-            <div className="relative aspect-square md:aspect-4/3 rounded-3xl overflow-hidden shadow-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-              {/* Mockup UI Interface */}
-              <div className="absolute inset-0 flex flex-col">
-                {/* Header Mockup */}
-                <div className="h-12 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-4 gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                </div>
-                {/* Body Mockup */}
-                <div className="flex-1 flex bg-white dark:bg-zinc-950 relative">
-                  {/* Sidebar Palette */}
-                  <div className="w-16 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-6 gap-4">
-                    <div className="w-8 h-8 rounded-full bg-amber-600 ring-2 ring-offset-2 ring-amber-600 ring-offset-white dark:ring-offset-black"></div>
-                    <div className="w-8 h-8 rounded-full bg-blue-600 opacity-50 grayscale"></div>
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 opacity-50 grayscale"></div>
-                  </div>
-                  {/* Canvas Area (Abstract Batik Pattern) */}
-                  <div className="flex-1 relative overflow-hidden flex items-center justify-center p-8">
-                    <div
-                      className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+            <div className="relative aspect-[3/4] rounded-[2.5rem] overflow-hidden shadow-2xl bg-zinc-100 dark:bg-zinc-900 border-4 border-white dark:border-zinc-800">
+              <div className="absolute inset-0 opacity-[0.05] bg-[url('/file.svg')] bg-repeat space-x-2" />
+              <div className="absolute inset-0 bg-gradient-to-b from-zinc-50/0 to-zinc-200/50 dark:to-black/50" />
+
+              {/* MODEL LAYERS */}
+              <div className="absolute inset-0 flex items-end justify-center pb-0">
+                <div className="relative w-[90%] h-[90%]">
+                  {/* Base Model (z-0) */}
+                  <Image
+                    src="/images/pria/base.png"
+                    alt="Model Base"
+                    fill
+                    className="object-contain object-bottom z-0"
+                    priority
+                  />
+
+                  {/* Shirt Layer (z-10) */}
+                  <div className="absolute inset-0 z-10">
+                    <motion.div
+                      animate={{ backgroundColor: activeLook.color }}
+                      transition={{ duration: 0.5 }}
+                      className="absolute inset-0 w-full h-full"
                       style={{
-                        backgroundImage:
-                          "radial-gradient(circle, currentColor 1px, transparent 1px)",
-                        backgroundSize: "20px 20px",
+                        maskImage: `url('/images/pria/mask-top.png')`,
+                        WebkitMaskImage: `url('/images/pria/mask-top.png')`,
+                        maskSize: "contain",
+                        WebkitMaskSize: "contain",
+                        maskPosition: "bottom",
+                        WebkitMaskPosition: "bottom",
+                        maskRepeat: "no-repeat",
+                        WebkitMaskRepeat: "no-repeat",
                       }}
-                    ></div>
-
-                    {/* Floating Cards (Simulasi Layers) */}
-                    <motion.div
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 4,
-                        ease: "easeInOut",
-                      }}
-                      className="w-48 h-64 bg-amber-100 dark:bg-amber-900/20 rounded-lg border-2 border-amber-600/30 flex items-center justify-center relative z-10 backdrop-blur-sm"
                     >
-                      <span className="text-amber-700 dark:text-amber-500 font-serif italic text-xl">
-                        Motif Semen
-                      </span>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={activeLook.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.5 }}
+                          className="absolute inset-0 w-full h-full mix-blend-multiply opacity-90"
+                          style={{
+                            backgroundImage: `url('${activeLook.pattern}')`,
+                            backgroundSize: "120px",
+                            backgroundRepeat: "repeat",
+                          }}
+                        />
+                      </AnimatePresence>
                     </motion.div>
+                  </div>
 
-                    <motion.div
-                      animate={{ y: [0, -15, 0] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 5,
-                        ease: "easeInOut",
-                        delay: 1,
+                  {/* Shadow Shirt (z-20) */}
+                  <div className="absolute inset-0 z-20 mix-blend-multiply opacity-80 pointer-events-none">
+                    <Image
+                      src="/images/pria/shadow-top.png"
+                      alt="Shadow"
+                      fill
+                      className="object-contain object-bottom"
+                    />
+                  </div>
+
+                  {/* Celana (z-10, tapi shadow z-20) */}
+                  {/* REVISI 2: Layer Celana tetap, tapi UI kita naikkan z-indexnya */}
+                  <div className="absolute inset-0 z-10">
+                    <div
+                      className="absolute inset-0 bg-zinc-900"
+                      style={{
+                        maskImage: `url('/images/pria/mask-bottom.png')`,
+                        WebkitMaskImage: `url('/images/pria/mask-bottom.png')`,
+                        maskSize: "contain",
+                        maskPosition: "bottom",
+                        maskRepeat: "no-repeat",
                       }}
-                      className="absolute w-40 h-56 bg-zinc-900/5 dark:bg-white/5 rounded-lg border border-dashed border-zinc-400 dark:border-zinc-600 -rotate-6 z-0"
+                    />
+                    <Image
+                      src="/images/pria/shadow-bottom.png"
+                      alt="Shadow"
+                      fill
+                      className="object-contain object-bottom z-20 mix-blend-multiply opacity-80"
                     />
                   </div>
                 </div>
-
-                {/* Floating Price Tag */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1 }}
-                  className="absolute bottom-6 right-6 bg-white dark:bg-zinc-900 px-4 py-3 rounded-xl shadow-xl border border-zinc-100 dark:border-zinc-800 flex flex-col"
-                >
-                  <span className="text-xs text-zinc-500 uppercase tracking-wider">
-                    Estimasi Harga
-                  </span>
-                  <span className="font-bold text-lg text-zinc-900 dark:text-white">
-                    Rp 185.000
-                  </span>
-                </motion.div>
               </div>
+
+              {/* --- FLOATING UI ELEMENTS --- */}
+              {/* REVISI 2: Tambahkan z-30 agar di atas layer celana (yang punya z-20) */}
+
+              {/* Color Picker Animation */}
+              <div className="absolute top-6 right-6 flex flex-col gap-2 z-30">
+                {DEMO_LOOKS.map((look, idx) => (
+                  <motion.div
+                    key={look.id}
+                    animate={{
+                      scale: activeLookIndex === idx ? 1.2 : 1,
+                      opacity: activeLookIndex === idx ? 1 : 0.5,
+                    }}
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg cursor-pointer"
+                    style={{ backgroundColor: look.color }}
+                    onClick={() => setActiveLookIndex(idx)}
+                  />
+                ))}
+              </div>
+
+              {/* Info Card Animation */}
+              <motion.div
+                key={activeLook.id}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                // Tambahkan z-30 disini
+                className="absolute bottom-8 left-8 bg-white/90 dark:bg-black/80 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-white/20 flex items-center gap-4 max-w-[80%] z-30"
+              >
+                <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full">
+                  <Sparkles className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">
+                    Sedang Ditampilkan
+                  </p>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
+                    {activeLook.name}
+                  </h3>
+                  <p className="text-xs text-amber-600 font-mono mt-0.5">
+                    {activeLook.price}
+                  </p>
+                </div>
+              </motion.div>
             </div>
+
+            {/* Decorative Background Element behind Card */}
+            <div className="absolute -inset-4 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-[3rem] opacity-20 blur-2xl -z-10" />
           </motion.div>
         </div>
       </div>
