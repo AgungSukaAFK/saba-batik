@@ -23,7 +23,7 @@ const teamMembers = [
     photo: "/images/anggota/yofa.jpeg",
     hobby: "Swimming",
     motto:
-      "Teatap lakuin apa yang menurut lo baik selagi ga ngerugiin orang lain.",
+      "Tetap lakuin apa yang menurut lo baik selagi ga ngerugiin orang lain.",
     icon: Heart,
   },
   {

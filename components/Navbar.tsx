@@ -1,175 +1,142 @@
-"use client";
+"use client"; // Pastikan ini client component
 
+import { createClient } from "@/utils/supabase/client"; //
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Moon, Sun, Menu, X, Sparkles } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { User, LogOut, ShoppingCart, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// ... import ThemeToggle (sesuai kode lama Anda)
 
 export default function Navbar() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const pathname = usePathname();
+  const supabase = createClient();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
 
-  // Efek glassmorphism saat di-scroll
+  // Cek user saat mount
   useEffect(() => {
-    setMounted(true);
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    getUser();
 
-  // Helper untuk mengecek link aktif
-  const isActive = (path: string) => pathname === path;
+    // Listener realtime login/logout
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (_event === "SIGNED_OUT") router.refresh();
+    });
 
-  if (!mounted) return null;
+    return () => subscription.unsubscribe();
+  }, [supabase, router]);
 
-  const navLinks = [
-    { name: "Beranda", href: "/" },
-    { name: "Simulasi", href: "/simulasi" },
-    { name: "Galeri Motif", href: "/gallery" },
-    { name: "Tentang Kami", href: "/about" }, // Bisa di-uncomment nanti
-  ];
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 py-3 shadow-sm"
-          : "bg-transparent py-5"
-      }`}
-    >
-      <div className="container mx-auto px-6 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group z-50 relative">
-          <div className="w-9 h-9 bg-amber-600 rounded-tr-xl rounded-bl-xl flex items-center justify-center text-white font-bold text-lg group-hover:rotate-6 transition-transform shadow-lg shadow-amber-600/20">
-            S
-          </div>
-          <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-            Saba<span className="text-amber-600">Batik</span>
-          </span>
+    <nav className="fixed w-full z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+        {/* LOGO */}
+        <Link
+          href="/"
+          className="text-xl font-serif font-bold text-amber-700 dark:text-amber-500"
+        >
+          Saba Batik
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                isActive(item.href)
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-amber-600 dark:text-amber-500"
-                  : "text-zinc-600 dark:text-zinc-300 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Actions (Desktop) */}
-        <div className="hidden md:flex items-center gap-3">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400 focus:outline-none"
-            aria-label="Toggle Theme"
-          >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
-          <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
-
-          <Button
-            variant="ghost"
-            className="rounded-full text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white"
-          >
-            Masuk
-          </Button>
-
-          <Button
-            asChild
-            className="rounded-full bg-amber-600 hover:bg-amber-700 text-white border-none shadow-lg shadow-amber-600/20 px-6"
-          >
-            <Link href="/simulasi">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Mulai Desain
-            </Link>
-          </Button>
+        {/* MENU TENGAH */}
+        <div className="hidden md:flex gap-6 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          <Link href="/" className="hover:text-amber-600">
+            Beranda
+          </Link>
+          <Link href="/gallery" className="hover:text-amber-600">
+            Galeri Motif
+          </Link>
+          <Link href="/simulasi" className="hover:text-amber-600">
+            Simulasi
+          </Link>
+          <Link href="/about" className="hover:text-amber-600">
+            Tentang Kami
+          </Link>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <div className="flex items-center gap-4 md:hidden z-50">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+        {/* MENU KANAN (AUTH) */}
+        <div className="flex items-center gap-4">
+          {/* Cart Icon (Dummy) */}
+          <Button size="icon" variant="ghost">
+            <ShoppingCart className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+          </Button>
 
-          <button
-            className="p-2 text-zinc-900 dark:text-zinc-100"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+          {user ? (
+            // JIKA SUDAH LOGIN: TAMPILKAN DROPDOWN USER
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
+                  <UserCircle className="h-8 w-8 text-amber-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user.user_metadata.full_name || "User"}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="cursor-pointer">
+                    Dashboard Saya
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/orders" className="cursor-pointer">
+                    Riwayat Pesanan
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-600 cursor-pointer focus:text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // JIKA BELUM LOGIN
+            <Button
+              asChild
+              size="sm"
+              className="bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 rounded-full px-6"
+            >
+              <Link href="/login">Masuk</Link>
+            </Button>
+          )}
         </div>
       </div>
-
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 top-15 bg-white dark:bg-black z-40 md:hidden flex flex-col p-6"
-          >
-            <nav className="flex flex-col gap-2 mt-4">
-              {navLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`text-lg font-medium py-4 border-b border-zinc-100 dark:border-zinc-900 ${
-                    isActive(item.href)
-                      ? "text-amber-600 dark:text-amber-500"
-                      : "text-zinc-800 dark:text-zinc-200"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-
-              <div className="flex gap-4 mt-8">
-                <Button
-                  className="w-full h-12 rounded-full bg-amber-600 text-lg"
-                  asChild
-                >
-                  <Link
-                    href="/simulasi"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Mulai Simulasi
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="mt-4 text-center">
-                <Button variant="link" className="text-zinc-500">
-                  Masuk sebagai Admin
-                </Button>
-              </div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
+    </nav>
   );
 }
