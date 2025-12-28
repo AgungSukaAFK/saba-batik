@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
+import Script from "next/script"; // Wajib untuk Midtrans
 import {
   Loader2,
   ShoppingCart,
@@ -16,7 +17,7 @@ import {
   X,
   Ban,
   Dices,
-  Scaling, // Icon untuk size
+  Scaling,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -59,7 +60,7 @@ type PartConfig = {
   motif: Motif | null;
   baseColor: string;
   motifColor: string;
-  patternSize: PatternSize; // Field Baru
+  patternSize: PatternSize;
 };
 
 // Warna Default Tambahan
@@ -107,7 +108,7 @@ export default function SimulasiEditor() {
   const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // --- 1. FETCH DATA & DEFAULT VALUE ---
+  // --- 1. FETCH DATA & INITIALIZATION ---
   useEffect(() => {
     async function fetchData() {
       try {
@@ -130,8 +131,26 @@ export default function SimulasiEditor() {
         );
         setColors(uniqueColors);
 
-        // --- SET DEFAULT LOGIC ---
-        if (matData && motData && uniqueColors.length > 0) {
+        // --- CEK LOCAL STORAGE (RESTORE STATE SETELAH LOGIN) ---
+        const savedState = localStorage.getItem("pendingCheckout");
+        if (savedState && matData && motData) {
+          try {
+            const parsed = JSON.parse(savedState);
+            // Restore Config
+            setTopConfig(parsed.top);
+            setBottomConfig(parsed.bottom);
+            setQty(parsed.qty);
+
+            // Hapus agar tidak load ulang terus
+            localStorage.removeItem("pendingCheckout");
+
+            // Auto open modal checkout
+            setTimeout(() => setShowCheckoutModal(true), 500);
+          } catch (e) {
+            console.error("Gagal restore state", e);
+          }
+        } else if (matData && motData && uniqueColors.length > 0) {
+          // --- DEFAULT VALUES (JIKA TIDAK ADA SAVED STATE) ---
           const black =
             uniqueColors.find((c) => c.hex_code === "#000000") ||
             uniqueColors[0];
@@ -143,7 +162,6 @@ export default function SimulasiEditor() {
           const randomCol = () =>
             uniqueColors[Math.floor(Math.random() * uniqueColors.length)];
 
-          // 1. Atasan: Random Full
           const topBase = randomCol();
           setTopConfig({
             material: randomMat(),
@@ -153,7 +171,6 @@ export default function SimulasiEditor() {
             patternSize: "sedang",
           });
 
-          // 2. Bawahan: Hitam Polos
           setBottomConfig({
             material: matData[0],
             motif: null,
@@ -194,7 +211,7 @@ export default function SimulasiEditor() {
   const getPatternSizePx = (size: PatternSize) => {
     switch (size) {
       case "kecil":
-        return "60px"; // Makin kecil angka, makin rapat motifnya
+        return "60px";
       case "besar":
         return "200px";
       default:
@@ -273,17 +290,56 @@ export default function SimulasiEditor() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  // --- 3. CHECKOUT & MIDTRANS LOGIC (FINAL UPDATED) ---
   const handleCheckout = async () => {
     setIsCheckingOut(true);
     try {
+      // 1. Cek User Auth
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      // A. JIKA BELUM LOGIN
       if (!user) {
-        alert("Harap login terlebih dahulu.");
+        // Simpan state ke LocalStorage
+        const stateToSave = {
+          top: topConfig,
+          bottom: bottomConfig,
+          qty: qty,
+        };
+        localStorage.setItem("pendingCheckout", JSON.stringify(stateToSave));
+
+        // Alert info
+        alert(
+          "Silakan login atau daftar akun terlebih dahulu untuk melanjutkan pemesanan."
+        );
+
+        // Redirect ke login dengan parameter 'next'
+        router.push("/login?next=/simulasi");
+        return;
+      }
+
+      // B. JIKA SUDAH LOGIN, CEK KELENGKAPAN PROFIL
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      // Validasi Alamat & HP
+      if (!profile?.address || !profile?.phone_number) {
+        const confirmGoToDashboard = confirm(
+          "Data pengiriman (Alamat/No HP) belum lengkap. Lengkapi di Dashboard sekarang?"
+        );
+        if (confirmGoToDashboard) {
+          router.push("/dashboard");
+        }
         setIsCheckingOut(false);
         return;
       }
+
+      // C. PROSES ORDER (Create Transaction)
+      // 1. Insert Order
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -293,8 +349,10 @@ export default function SimulasiEditor() {
         })
         .select()
         .single();
+
       if (orderError) throw orderError;
 
+      // 2. Insert Order Items
       const items = [
         {
           order_id: orderData.id,
@@ -318,13 +376,55 @@ export default function SimulasiEditor() {
         .insert(items);
       if (itemsError) throw itemsError;
 
-      setShowCheckoutModal(false);
-      alert("Checkout Berhasil!");
-      window.location.reload();
+      // 3. Request Midtrans Token (Internal API)
+      const response = await fetch("/api/tokenizer", {
+        method: "POST",
+        body: JSON.stringify({
+          id: orderData.id,
+          total: totalPrice,
+          user: {
+            full_name: profile.full_name || user.email,
+            email: user.email,
+            phone: profile.phone_number || "08123456789",
+          },
+        }),
+      });
+
+      const { token } = await response.json();
+      if (!token) throw new Error("Gagal mendapatkan token pembayaran");
+
+      // 4. Trigger Snap Popup
+      window.snap.pay(token, {
+        onSuccess: async function (result: any) {
+          // [BARU] Panggil API Server untuk update status agar reliable & aman
+          await fetch("/api/orders/update-status", {
+            method: "POST",
+            body: JSON.stringify({ orderId: orderData.id }),
+          });
+
+          alert("Pembayaran Berhasil! Mengalihkan ke dashboard...");
+          router.push("/dashboard");
+        },
+        onPending: function (result: any) {
+          alert("Menunggu pembayaran... Silakan cek dashboard.");
+          router.push("/dashboard");
+        },
+        onError: function (result: any) {
+          alert("Pembayaran gagal!");
+          router.push("/dashboard");
+        },
+        onClose: function () {
+          alert(
+            "Anda belum menyelesaikan pembayaran. Cek dashboard untuk bayar nanti."
+          );
+          router.push("/dashboard");
+        },
+      });
     } catch (e: any) {
-      alert("Checkout Gagal: " + e.message);
+      alert("Proses Gagal: " + e.message);
     } finally {
       setIsCheckingOut(false);
+      setShowCheckoutModal(false);
     }
   };
 
@@ -333,7 +433,7 @@ export default function SimulasiEditor() {
     const config = type === "top" ? topConfig : bottomConfig;
     const maskImage = `/images/${gender}/mask-${type}.png`;
     const shadowImage = `/images/${gender}/shadow-${type}.png`;
-    const patternSizePx = getPatternSizePx(config.patternSize); // Logic ukuran disini
+    const patternSizePx = getPatternSizePx(config.patternSize);
 
     return (
       <div className="absolute inset-0 w-full h-full pointer-events-none">
@@ -359,14 +459,14 @@ export default function SimulasiEditor() {
           {/* Motif Layer */}
           {config.motif?.image_url && (
             <>
-              {/* Layer 1: Masking (Warna Akurat) */}
+              {/* Layer 1: Masking */}
               <div
                 className="absolute inset-0 w-full h-full transition-all duration-300 z-10"
                 style={{
                   backgroundColor: config.motifColor,
                   maskImage: `url('${config.motif.image_url}')`,
                   WebkitMaskImage: `url('${config.motif.image_url}')`,
-                  maskSize: patternSizePx, // <-- Gunakan ukuran dinamis
+                  maskSize: patternSizePx,
                   WebkitMaskSize: patternSizePx,
                   maskRepeat: "repeat",
                   WebkitMaskRepeat: "repeat",
@@ -378,7 +478,7 @@ export default function SimulasiEditor() {
                 className="absolute inset-0 w-full h-full z-0 mix-blend-multiply opacity-80 transition-all duration-300"
                 style={{
                   backgroundImage: `url('${config.motif.image_url}')`,
-                  backgroundSize: patternSizePx, // <-- Gunakan ukuran dinamis
+                  backgroundSize: patternSizePx,
                   backgroundRepeat: "repeat",
                   backgroundPosition: "center",
                   display: config.motifColor === "#000000" ? "block" : "none",
@@ -514,7 +614,7 @@ export default function SimulasiEditor() {
               </div>
             </div>
 
-            {/* NEW: 3. UKURAN MOTIF (Hanya jika ada motif) */}
+            {/* 3. UKURAN MOTIF */}
             {config.motif && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                 <Label className="text-xs font-semibold uppercase text-zinc-500 flex items-center gap-1">
@@ -627,6 +727,13 @@ export default function SimulasiEditor() {
 
   return (
     <section className="bg-zinc-50 dark:bg-black min-h-screen flex flex-col relative overflow-hidden">
+      {/* Script Midtrans (Penting!) */}
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_URL}
+        strategy="afterInteractive"
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+      />
+
       {/* HEADER */}
       <div className="absolute top-0 left-0 right-0 z-40 bg-white/90 dark:bg-black/90 backdrop-blur border-b h-16 px-6 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
