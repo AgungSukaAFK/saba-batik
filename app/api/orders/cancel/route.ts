@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       .from("orders")
       .update({ status: "failed" })
       .eq("id", orderId)
-      .eq("user_id", user.id); // Pastikan milik user sendiri
+      .eq("user_id", user.id);
 
     if (error) throw error;
 

@@ -7,27 +7,26 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Layers, Palette, Scissors, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- DATA DEMO ---
 const DEMO_LOOKS = [
   {
     id: 1,
     name: "Semen Merah",
-    color: "#B91C1C", // Red 700
-    pattern: "/images/batik/semen.png",
+    color: "#B91C1C",
+    pattern: "/images/batik/semen.webp",
     price: "Rp 185.000",
   },
   {
     id: 2,
     name: "Liong Biru",
-    color: "#1D4ED8", // Blue 700
-    pattern: "/images/batik/liong.png",
+    color: "#1D4ED8",
+    pattern: "/images/batik/liong.webp",
     price: "Rp 210.000",
   },
   {
     id: 3,
     name: "Hokokai Hitam",
-    color: "#18181B", // Zinc 950
-    pattern: "/images/batik/hokokai.png",
+    color: "#18181B",
+    pattern: "/images/batik/hokokai.webp",
     price: "Rp 250.000",
   },
 ];
@@ -36,7 +35,6 @@ export default function Hero() {
   const [activeLookIndex, setActiveLookIndex] = useState(0);
   const activeLook = DEMO_LOOKS[activeLookIndex];
 
-  // Auto-play ganti motif setiap 3 detik
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveLookIndex((prev) => (prev + 1) % DEMO_LOOKS.length);
@@ -45,15 +43,12 @@ export default function Hero() {
   }, []);
 
   return (
-    // REVISI 1: Gunakan h-screen pada desktop agar fit tanpa scroll
     <section className="relative pt-32 pb-12 lg:py-0 lg:h-screen flex items-center overflow-hidden">
-      {/* Background Decor */}
       <div className="absolute top-0 right-0 -z-10 w-150 h-150 bg-amber-400/20 rounded-full blur-[100px] opacity-50 translate-x-1/3 -translate-y-1/4 pointer-events-none" />
       <div className="absolute bottom-0 left-0 -z-10 w-100 h-100 bg-blue-400/10 rounded-full blur-[80px] opacity-30 -translate-x-1/3 translate-y-1/4 pointer-events-none" />
 
       <div className="container mx-auto px-6 h-full flex items-center">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
-          {/* --- LEFT CONTENT --- */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -123,7 +118,6 @@ export default function Hero() {
             </div>
           </motion.div>
 
-          {/* --- RIGHT VISUAL (AUTO PLAY DEMO) --- */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -134,10 +128,8 @@ export default function Hero() {
               <div className="absolute inset-0 opacity-[0.05] bg-[url('/file.svg')] bg-repeat space-x-2" />
               <div className="absolute inset-0 bg-gradient-to-b from-zinc-50/0 to-zinc-200/50 dark:to-black/50" />
 
-              {/* MODEL LAYERS */}
               <div className="absolute inset-0 flex items-end justify-center pb-0">
                 <div className="relative w-[90%] h-[90%]">
-                  {/* Base Model (z-0) */}
                   <Image
                     src="/images/pria/base.png"
                     alt="Model Base"
@@ -146,7 +138,6 @@ export default function Hero() {
                     priority
                   />
 
-                  {/* Shirt Layer (z-10) */}
                   <div className="absolute inset-0 z-10">
                     <motion.div
                       animate={{ backgroundColor: activeLook.color }}
@@ -181,7 +172,6 @@ export default function Hero() {
                     </motion.div>
                   </div>
 
-                  {/* Shadow Shirt (z-20) */}
                   <div className="absolute inset-0 z-20 mix-blend-multiply opacity-80 pointer-events-none">
                     <Image
                       src="/images/pria/shadow-top.png"
@@ -191,8 +181,6 @@ export default function Hero() {
                     />
                   </div>
 
-                  {/* Celana (z-10, tapi shadow z-20) */}
-                  {/* REVISI 2: Layer Celana tetap, tapi UI kita naikkan z-indexnya */}
                   <div className="absolute inset-0 z-10">
                     <div
                       className="absolute inset-0 bg-zinc-900"
@@ -214,10 +202,6 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* --- FLOATING UI ELEMENTS --- */}
-              {/* REVISI 2: Tambahkan z-30 agar di atas layer celana (yang punya z-20) */}
-
-              {/* Color Picker Animation */}
               <div className="absolute top-6 right-6 flex flex-col gap-2 z-30">
                 {DEMO_LOOKS.map((look, idx) => (
                   <motion.div
@@ -233,13 +217,11 @@ export default function Hero() {
                 ))}
               </div>
 
-              {/* Info Card Animation */}
               <motion.div
                 key={activeLook.id}
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                // Tambahkan z-30 disini
                 className="absolute bottom-8 left-8 bg-white/90 dark:bg-black/80 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-white/20 flex items-center gap-4 max-w-[80%] z-30"
               >
                 <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full">
@@ -259,7 +241,6 @@ export default function Hero() {
               </motion.div>
             </div>
 
-            {/* Decorative Background Element behind Card */}
             <div className="absolute -inset-4 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-[3rem] opacity-20 blur-2xl -z-10" />
           </motion.div>
         </div>

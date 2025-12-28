@@ -27,7 +27,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-// --- DATA & TYPE ---
 type Motif = {
   id: number;
   name: string;
@@ -35,7 +34,6 @@ type Motif = {
   image_url: string;
 };
 
-// Library Data Statis
 const MOTIF_INFO: Record<
   string,
   { desc: string; usage: string; meaning: string }
@@ -144,15 +142,14 @@ export default function GalleryGrid({ motifs }: { motifs: Motif[] }) {
               className="cursor-pointer"
             >
               <Card className="group overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-xl hover:shadow-amber-900/10 transition-all duration-300 h-full flex flex-col hover:-translate-y-1">
-                {/* 1. THUMBNAIL: CONTINUOUS / FULL COVER */}
-                {/* Menghapus padding (p-6) dan bg-zinc-100 agar gambar full */}
+                {/* 1. THUMBNAIL */}
                 <div className="relative aspect-square overflow-hidden bg-zinc-50 dark:bg-zinc-900 border-b dark:border-zinc-800">
                   <Image
                     src={motif.image_url || "/window.svg"}
                     alt={motif.name}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105" // object-cover bikin gambar full
+                    className="object-cover transition-transform duration-700 group-hover:scale-105 dark:invert"
                   />
 
                   <Badge className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white border shadow-sm backdrop-blur-sm z-10">
@@ -189,14 +186,12 @@ export default function GalleryGrid({ motifs }: { motifs: Motif[] }) {
         </AnimatePresence>
       </motion.div>
 
-      {/* --- MODAL DETAIL (FIX SCROLL & CONTINUOUS IMAGE) --- */}
+      {/* --- MODAL DETAIL --- */}
       <Dialog
         open={!!selectedMotif}
         onOpenChange={(open) => !open && setSelectedMotif(null)}
       >
         {selectedMotif && (
-          // FIX 1: Set max-h-[90vh] dan h-[600px] pada DialogContent agar tingginya pasti
-          // Flex Column pada mobile, Flex Row pada Desktop
           <DialogContent className="max-w-5xl w-[95vw] p-0 overflow-hidden bg-white dark:bg-zinc-950 border-none shadow-2xl h-[90vh] md:h-[600px] flex flex-col md:flex-row gap-0">
             {/* KIRI: GAMBAR (Continuous / Full Cover) */}
             <div className="relative w-full md:w-[45%] h-[35%] md:h-full bg-zinc-100 dark:bg-zinc-900 shrink-0">
@@ -204,11 +199,11 @@ export default function GalleryGrid({ motifs }: { motifs: Motif[] }) {
                 src={selectedMotif.image_url || "/window.svg"}
                 alt={selectedMotif.name}
                 fill
-                className="object-cover" // Full Bleed Image
+                className="object-cover dark:invert"
                 priority
               />
 
-              {/* Overlay Judul di Mobile (Karena layout bertumpuk) */}
+              {/* Overlay Judul di Mobile */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 md:hidden">
                 <h2 className="text-white text-xl font-serif font-bold">
                   {selectedMotif.name}
@@ -217,12 +212,7 @@ export default function GalleryGrid({ motifs }: { motifs: Motif[] }) {
             </div>
 
             {/* KANAN: INFO DETAIL (Scrollable) */}
-            {/* FIX 2: min-h-0 sangat penting agar flex item bisa discroll */}
             <div className="flex-1 flex flex-col min-h-0 h-full bg-white dark:bg-zinc-950 relative overflow-auto">
-              {/* <DialogClose className="absolute top-3 right-3 z-50 p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-full transition-colors">
-                <X className="w-4 h-4" />
-              </DialogClose> */}
-
               {/* Header (Hidden on Mobile) */}
               <DialogHeader className="p-6 pb-2 hidden md:block shrink-0">
                 <div className="pr-8">
@@ -239,7 +229,6 @@ export default function GalleryGrid({ motifs }: { motifs: Motif[] }) {
               </DialogHeader>
 
               {/* Scrollable Content Area */}
-              {/* FIX 3: Flex-1 pada ScrollArea membuatnya mengisi sisa ruang yang tersedia */}
               <ScrollArea className="flex-1 w-full">
                 <div className="p-6 space-y-6">
                   {/* Makna */}

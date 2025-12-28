@@ -23,7 +23,6 @@ export async function POST(request: Request) {
         email: user.email,
         phone: user.phone,
       },
-      // Opsional: Agar popup redirect kembali ke dashboard setelah selesai/pending
       callbacks: {
         finish: `${request.headers.get("origin")}/dashboard`,
       },
@@ -31,7 +30,6 @@ export async function POST(request: Request) {
 
     const token = await snap.createTransaction(parameter);
 
-    // SIMPAN TOKEN KE DB (Sekarang berhasil karena RLS sudah diizinkan)
     const { error } = await supabase
       .from("orders")
       .update({ snap_token: token.token })

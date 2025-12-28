@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import Midtrans from "midtrans-client";
 
-// Inisialisasi Midtrans Core API
 const apiClient = new Midtrans.CoreApi({
   isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
@@ -14,20 +13,17 @@ export async function POST(request: Request) {
     const { orderId } = await request.json();
     const supabase = await createClient();
 
-    // 1. Cek Status Transaksi ke Midtrans
-    // FIX: Gunakan (apiClient as any) untuk bypass validasi TypeScript
     const transactionStatus = await (apiClient as any).transaction.status(
       orderId
     );
 
-    // Mapping status Midtrans ke status Database kita
     let newStatus = "pending";
     const fraudStatus = transactionStatus.fraud_status;
     const midtransStatus = transactionStatus.transaction_status;
 
     if (midtransStatus == "capture") {
       if (fraudStatus == "challenge") {
-        newStatus = "pending"; // Challenge = perlu review manual
+        newStatus = "pending";
       } else if (fraudStatus == "accept") {
         newStatus = "paid";
       }
@@ -43,7 +39,6 @@ export async function POST(request: Request) {
       newStatus = "pending";
     }
 
-    // 2. Update Database (Menggunakan Service Role/Server Client yang bypass RLS User)
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })

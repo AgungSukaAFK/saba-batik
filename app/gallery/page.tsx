@@ -2,13 +2,11 @@ import GalleryGrid from "@/components/GalleryGrid";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/utils/supabase/server";
 
-// Revalidate data setiap 1 jam agar performa cepat tapi tetap update
 export const revalidate = 3600;
 
 export default async function GalleryPage() {
   const supabase = await createClient();
 
-  // Fetch data motif dari Supabase
   const { data: motifs } = await supabase
     .from("motifs")
     .select("*")

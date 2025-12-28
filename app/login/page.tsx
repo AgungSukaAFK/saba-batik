@@ -17,7 +17,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 
-// Wajib dibungkus Suspense agar build aman (karena pakai useSearchParams)
 export default function LoginPage() {
   return (
     <Suspense
@@ -37,24 +36,21 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Ambil URL tujuan dari parameter ?next=... (Default ke /dashboard)
   const nextUrl = searchParams.get("next") || "/dashboard";
 
   const [loading, setLoading] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // 1. LOGIN GOOGLE
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMsg("");
 
-    const origin = location.origin; // ex: http://localhost:3000
+    const origin = location.origin;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // Redirect ke route callback kita + bawa info nextUrl
         redirectTo: `${origin}/auth/callback?next=${nextUrl}`,
       },
     });
@@ -65,7 +61,6 @@ function LoginForm() {
     }
   };
 
-  // 2. LOGIN / REGISTER EMAIL
   const handleEmailAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -79,32 +74,29 @@ function LoginForm() {
 
     try {
       if (isRegister) {
-        // --- REGISTER ---
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: fullName,
-              phone_number: phone, // Simpan no hp ke metadata user
+              phone_number: phone,
             },
           },
         });
         if (error) throw error;
 
         alert("Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.");
-        setIsRegister(false); // Balik ke mode login
+        setIsRegister(false);
       } else {
-        // --- LOGIN ---
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
 
-        // Login sukses -> Redirect ke halaman tujuan (Simulasi/Dashboard)
         router.push(nextUrl);
-        router.refresh(); // Refresh agar navbar update
+        router.refresh();
       }
     } catch (err: any) {
       setErrorMsg(err.message);

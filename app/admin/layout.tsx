@@ -8,7 +8,6 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient();
 
-  // 1. Cek User Login
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -16,14 +15,12 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // 2. Cek Role di Tabel Profiles
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  // Jika bukan admin, tendang ke home
   if (!profile || profile.role !== "admin") {
     redirect("/");
   }
