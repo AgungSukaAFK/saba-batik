@@ -23,14 +23,15 @@ import {
   Package,
   ShoppingBag,
   Calendar,
-  Clock,
-  AlertCircle,
   RefreshCw,
   XCircle,
   CreditCard,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
+// --- TIPE DATA ---
 type Profile = {
   id: string;
   full_name: string | null;
@@ -70,6 +71,7 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState("all");
 
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     const getData = async () => {
       const {
@@ -95,6 +97,8 @@ export default function DashboardPage() {
   }, [router, supabase]);
 
   const fetchOrders = async (userId: string) => {
+    // FIX: Menggunakan Relasi Eksplisit (!nama_constraint)
+    // Agar tidak error "Ambiguous relationship" atau 400
     const { data: ordersData, error: ordersError } = await supabase
       .from("orders")
       .select(
@@ -102,7 +106,8 @@ export default function DashboardPage() {
         id, created_at, total_amount, status, snap_token,
         order_items (
           id, price_at_purchase, qty, bottom_hex_code,
-          material:materials(name), motif:motifs(name)
+          material:materials!order_items_material_id_fkey(name),
+          motif:motifs!order_items_motif_id_fkey(name)
         )
       `
       )
@@ -110,23 +115,16 @@ export default function DashboardPage() {
       .order("created_at", { ascending: false });
 
     if (ordersError) {
+      console.error("Fetch Error:", ordersError);
       toast.error("Gagal memuat riwayat pesanan");
     } else {
-      const transformedOrders = (ordersData || []).map((order: any) => ({
-        ...order,
-        order_items: order.order_items.map((item: any) => ({
-          ...item,
-          material: Array.isArray(item.material)
-            ? item.material[0] || null
-            : item.material,
-          motif: Array.isArray(item.motif) ? item.motif[0] || null : item.motif,
-        })),
-      }));
-      setOrders(transformedOrders);
+      // @ts-ignore
+      setOrders(ordersData || []);
     }
     setLoading(false);
   };
 
+  // --- 2. UPDATE PROFILE ---
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setUpdating(true);
@@ -155,16 +153,19 @@ export default function DashboardPage() {
     setUpdating(false);
   };
 
+  // --- 3. PAYMENT ACTIONS ---
   const handlePay = (snapToken: string) => {
     if (!snapToken) return toast.error("Token pembayaran hilang");
     setProcessingPayment(true);
 
+    // @ts-ignore - Window snap from script
     if (typeof window.snap === "undefined") {
       toast.error("Sistem pembayaran sedang memuat...");
       setProcessingPayment(false);
       return;
     }
 
+    // @ts-ignore
     window.snap.pay(snapToken, {
       onSuccess: () => {
         toast.success("Pembayaran Berhasil!");
@@ -229,6 +230,7 @@ export default function DashboardPage() {
     }
   };
 
+  // --- UI HELPERS ---
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -258,6 +260,7 @@ export default function DashboardPage() {
       ? "Bawahan"
       : "Item";
 
+  // Filter Orders Logic
   const filteredOrders = orders.filter((o) => {
     if (activeTab === "pending") return o.status === "pending";
     if (activeTab === "history")
@@ -265,6 +268,7 @@ export default function DashboardPage() {
     return true;
   });
 
+  // Reusable Order List Component
   const OrderList = ({ data }: { data: Order[] }) => {
     if (data.length === 0)
       return (
@@ -371,15 +375,16 @@ export default function DashboardPage() {
                       </>
                     )}
                     {["paid", "shipped"].includes(order.status) && (
+                      // Tombol Invoice Baru
                       <Button
                         size="sm"
                         variant="outline"
                         asChild
                         className="h-8 text-xs hover:bg-zinc-100"
                       >
-                        <a href={`/invoice/${order.id}`} target="_blank">
+                        <Link href={`/invoice/${order.id}`} target="_blank">
                           Invoice
-                        </a>
+                        </Link>
                       </Button>
                     )}
                   </div>
@@ -497,7 +502,7 @@ export default function DashboardPage() {
                   <TabsTrigger value="history">Selesai / Batal</TabsTrigger>
                 </TabsList>
 
-                {/* SCROLL AREA UNTUK MENGATASI LIST KEPANJANGAN */}
+                {/* SCROLL AREA */}
                 <ScrollArea className="h-[600px] pr-4 rounded-lg border border-transparent">
                   <TabsContent value="all" className="mt-0">
                     <OrderList data={orders} />
