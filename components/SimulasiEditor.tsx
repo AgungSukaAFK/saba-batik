@@ -2,22 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
-import Script from "next/script"; // Wajib untuk Midtrans
+import Script from "next/script";
 import {
   Loader2,
   ShoppingCart,
   RotateCcw,
   Shirt,
   Check,
-  Palette,
   Layers,
   Move,
   ZoomIn,
   ZoomOut,
-  X,
   Ban,
   Dices,
   Scaling,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -63,7 +63,6 @@ type PartConfig = {
   patternSize: PatternSize;
 };
 
-// Warna Default Tambahan
 const DEFAULT_COLORS = [
   { id: 998, name: "Hitam Legam", hex_code: "#000000" },
   { id: 999, name: "Putih Tulang", hex_code: "#F5F5F5" },
@@ -86,7 +85,6 @@ export default function SimulasiEditor() {
 
   // --- STATE SIMULASI ---
   const [gender, setGender] = useState<"pria" | "wanita">("pria");
-
   const [topConfig, setTopConfig] = useState<PartConfig>({
     material: null,
     motif: null,
@@ -108,7 +106,12 @@ export default function SimulasiEditor() {
   const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // --- 1. FETCH DATA & INITIALIZATION ---
+  // --- MOBILE STATE (BARU) ---
+  const [activeMobileTab, setActiveMobileTab] = useState<
+    "atasan" | "bawahan" | null
+  >(null);
+
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     async function fetchData() {
       try {
@@ -131,46 +134,29 @@ export default function SimulasiEditor() {
         );
         setColors(uniqueColors);
 
-        // --- CEK LOCAL STORAGE (RESTORE STATE SETELAH LOGIN) ---
+        // Restore State Logic (Sama seperti sebelumnya)
         const savedState = localStorage.getItem("pendingCheckout");
         if (savedState && matData && motData) {
-          try {
-            const parsed = JSON.parse(savedState);
-            // Restore Config
-            setTopConfig(parsed.top);
-            setBottomConfig(parsed.bottom);
-            setQty(parsed.qty);
-
-            // Hapus agar tidak load ulang terus
-            localStorage.removeItem("pendingCheckout");
-
-            // Auto open modal checkout
-            setTimeout(() => setShowCheckoutModal(true), 500);
-          } catch (e) {
-            console.error("Gagal restore state", e);
-          }
+          const parsed = JSON.parse(savedState);
+          setTopConfig(parsed.top);
+          setBottomConfig(parsed.bottom);
+          setQty(parsed.qty);
+          localStorage.removeItem("pendingCheckout");
+          setTimeout(() => setShowCheckoutModal(true), 500);
         } else if (matData && motData && uniqueColors.length > 0) {
-          // --- DEFAULT VALUES (JIKA TIDAK ADA SAVED STATE) ---
+          // Default logic
           const black =
             uniqueColors.find((c) => c.hex_code === "#000000") ||
             uniqueColors[0];
-
-          const randomMat = () =>
-            matData[Math.floor(Math.random() * matData.length)];
-          const randomMotif = () =>
-            motData[Math.floor(Math.random() * motData.length)];
-          const randomCol = () =>
+          const topBase =
             uniqueColors[Math.floor(Math.random() * uniqueColors.length)];
-
-          const topBase = randomCol();
           setTopConfig({
-            material: randomMat(),
-            motif: randomMotif(),
+            material: matData[Math.floor(Math.random() * matData.length)],
+            motif: motData[Math.floor(Math.random() * motData.length)],
             baseColor: topBase.hex_code,
             motifColor: topBase.hex_code === "#000000" ? "#FFFFFF" : "#000000",
             patternSize: "sedang",
           });
-
           setBottomConfig({
             material: matData[0],
             motif: null,
@@ -180,7 +166,7 @@ export default function SimulasiEditor() {
           });
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
@@ -188,46 +174,30 @@ export default function SimulasiEditor() {
     fetchData();
   }, []);
 
-  // --- 2. PREVENT SCROLL PAGE ---
+  // --- 2. PREVENT SCROLL ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const newScale = Math.min(
-        Math.max(transform.scale + e.deltaY * -0.001, 0.5),
-        3
-      );
-      setTransform((prev) => ({ ...prev, scale: newScale }));
+      setTransform((prev) => ({
+        ...prev,
+        scale: Math.min(Math.max(prev.scale + e.deltaY * -0.001, 0.5), 3),
+      }));
     };
-
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [transform.scale]);
+  }, []);
 
-  // --- HELPER LOGIC ---
-  const getPatternSizePx = (size: PatternSize) => {
-    switch (size) {
-      case "kecil":
-        return "60px";
-      case "besar":
-        return "200px";
-      default:
-        return "120px";
-    }
-  };
-
-  const calculatePartPrice = (config: PartConfig) => {
-    return (
-      (config.material?.base_price || 0) + (config.motif?.price_modifier || 0)
-    );
-  };
+  // --- HELPERS ---
+  const getPatternSizePx = (size: PatternSize) =>
+    size === "kecil" ? "60px" : size === "besar" ? "200px" : "120px";
+  const calculatePartPrice = (config: PartConfig) =>
+    (config.material?.base_price || 0) + (config.motif?.price_modifier || 0);
   const unitPrice =
     calculatePartPrice(topConfig) + calculatePartPrice(bottomConfig);
   const totalPrice = unitPrice * qty[0];
-
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -245,33 +215,29 @@ export default function SimulasiEditor() {
   };
 
   const handleRandomize = () => {
-    if (materials.length === 0 || motifs.length === 0 || colors.length === 0)
-      return;
-
+    if (materials.length === 0) return;
     const randomMat = () =>
       materials[Math.floor(Math.random() * materials.length)];
     const randomMotif = () => motifs[Math.floor(Math.random() * motifs.length)];
     const randomCol = () => colors[Math.floor(Math.random() * colors.length)];
-    const black = colors.find((c) => c.hex_code === "#000000") || colors[0];
 
     const topBase = randomCol();
     setTopConfig({
+      ...topConfig,
       material: randomMat(),
       motif: randomMotif(),
       baseColor: topBase.hex_code,
       motifColor: topBase.hex_code === "#000000" ? "#FFFFFF" : "#000000",
-      patternSize: "sedang",
     });
-
     setBottomConfig({
+      ...bottomConfig,
       material: materials[0],
       motif: null,
-      baseColor: black.hex_code,
-      motifColor: "#FFFFFF",
-      patternSize: "sedang",
+      baseColor: "#000000",
     });
   };
 
+  // --- DRAG HANDLERS ---
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     dragStart.current = {
@@ -290,56 +256,35 @@ export default function SimulasiEditor() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
-  // --- 3. CHECKOUT & MIDTRANS LOGIC (FINAL UPDATED) ---
+  // --- CHECKOUT ---
   const handleCheckout = async () => {
     setIsCheckingOut(true);
     try {
-      // 1. Cek User Auth
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
-      // A. JIKA BELUM LOGIN
       if (!user) {
-        // Simpan state ke LocalStorage
-        const stateToSave = {
-          top: topConfig,
-          bottom: bottomConfig,
-          qty: qty,
-        };
-        localStorage.setItem("pendingCheckout", JSON.stringify(stateToSave));
-
-        // Alert info
-        alert(
-          "Silakan login atau daftar akun terlebih dahulu untuk melanjutkan pemesanan."
+        localStorage.setItem(
+          "pendingCheckout",
+          JSON.stringify({ top: topConfig, bottom: bottomConfig, qty: qty })
         );
-
-        // Redirect ke login dengan parameter 'next'
+        alert("Silakan login terlebih dahulu.");
         router.push("/login?next=/simulasi");
         return;
       }
 
-      // B. JIKA SUDAH LOGIN, CEK KELENGKAPAN PROFIL
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
-
-      // Validasi Alamat & HP
       if (!profile?.address || !profile?.phone_number) {
-        const confirmGoToDashboard = confirm(
-          "Data pengiriman (Alamat/No HP) belum lengkap. Lengkapi di Dashboard sekarang?"
-        );
-        if (confirmGoToDashboard) {
+        if (confirm("Lengkapi data pengiriman di Dashboard?"))
           router.push("/dashboard");
-        }
         setIsCheckingOut(false);
         return;
       }
 
-      // C. PROSES ORDER (Create Transaction)
-      // 1. Insert Order
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -349,10 +294,8 @@ export default function SimulasiEditor() {
         })
         .select()
         .single();
-
       if (orderError) throw orderError;
 
-      // 2. Insert Order Items
       const items = [
         {
           order_id: orderData.id,
@@ -376,7 +319,6 @@ export default function SimulasiEditor() {
         .insert(items);
       if (itemsError) throw itemsError;
 
-      // 3. Request Midtrans Token (Internal API)
       const response = await fetch("/api/tokenizer", {
         method: "POST",
         body: JSON.stringify({
@@ -389,46 +331,31 @@ export default function SimulasiEditor() {
           },
         }),
       });
-
       const { token } = await response.json();
-      if (!token) throw new Error("Gagal mendapatkan token pembayaran");
+      if (!token) throw new Error("Gagal token");
 
-      // 4. Trigger Snap Popup
+      // @ts-ignore
       window.snap.pay(token, {
-        onSuccess: async function (result: any) {
-          // [BARU] Panggil API Server untuk update status agar reliable & aman
+        onSuccess: async () => {
           await fetch("/api/orders/update-status", {
             method: "POST",
             body: JSON.stringify({ orderId: orderData.id }),
           });
-
-          alert("Pembayaran Berhasil! Mengalihkan ke dashboard...");
           router.push("/dashboard");
         },
-        onPending: function (result: any) {
-          alert("Menunggu pembayaran... Silakan cek dashboard.");
-          router.push("/dashboard");
-        },
-        onError: function (result: any) {
-          alert("Pembayaran gagal!");
-          router.push("/dashboard");
-        },
-        onClose: function () {
-          alert(
-            "Anda belum menyelesaikan pembayaran. Cek dashboard untuk bayar nanti."
-          );
-          router.push("/dashboard");
-        },
+        onPending: () => router.push("/dashboard"),
+        onError: () => router.push("/dashboard"),
+        onClose: () => router.push("/dashboard"),
       });
     } catch (e: any) {
-      alert("Proses Gagal: " + e.message);
+      alert("Gagal: " + e.message);
     } finally {
       setIsCheckingOut(false);
       setShowCheckoutModal(false);
     }
   };
 
-  // --- VISUALISASI ---
+  // --- RENDER LAYERS ---
   const renderLayer = (type: "top" | "bottom") => {
     const config = type === "top" ? topConfig : bottomConfig;
     const maskImage = `/images/${gender}/mask-${type}.png`;
@@ -450,16 +377,12 @@ export default function SimulasiEditor() {
             WebkitMaskRepeat: "no-repeat",
           }}
         >
-          {/* Base Color */}
           <div
             className="absolute inset-0 w-full h-full transition-colors duration-300"
             style={{ backgroundColor: config.baseColor }}
           />
-
-          {/* Motif Layer */}
           {config.motif?.image_url && (
             <>
-              {/* Layer 1: Masking */}
               <div
                 className="absolute inset-0 w-full h-full transition-all duration-300 z-10"
                 style={{
@@ -473,7 +396,6 @@ export default function SimulasiEditor() {
                   maskPosition: "center",
                 }}
               />
-              {/* Layer 2: Fallback Multiply */}
               <div
                 className="absolute inset-0 w-full h-full z-0 mix-blend-multiply opacity-80 transition-all duration-300"
                 style={{
@@ -487,8 +409,6 @@ export default function SimulasiEditor() {
             </>
           )}
         </div>
-
-        {/* Shadow */}
         <div className="absolute inset-0 z-20 mix-blend-multiply opacity-60">
           <Image
             src={shadowImage}
@@ -502,7 +422,7 @@ export default function SimulasiEditor() {
     );
   };
 
-  // --- PANEL ---
+  // --- REUSABLE CONFIG PANEL ---
   const ConfigPanel = ({
     type,
     title,
@@ -515,19 +435,20 @@ export default function SimulasiEditor() {
 
     return (
       <Card className="border-none shadow-none bg-transparent h-full flex flex-col">
-        <CardHeader className="pb-2 border-b px-4 pt-4 shrink-0">
+        {/* Header Panel (Hanya tampil di Desktop) */}
+        <CardHeader className="hidden lg:block pb-2 border-b px-4 pt-4 shrink-0">
           <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide text-zinc-700 dark:text-zinc-300">
             {isTop ? (
               <Shirt className="w-4 h-4" />
             ) : (
               <Layers className="w-4 h-4" />
-            )}
+            )}{" "}
             {title}
           </CardTitle>
         </CardHeader>
 
         <ScrollArea className="flex-1">
-          <div className="p-4 space-y-6 pb-20">
+          <div className="p-4 space-y-6 pb-24">
             {/* 1. BAHAN */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase text-zinc-500">
@@ -556,7 +477,6 @@ export default function SimulasiEditor() {
               </Select>
             </div>
             <Separator />
-
             {/* 2. MOTIF */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase text-zinc-500">
@@ -582,7 +502,6 @@ export default function SimulasiEditor() {
                     </div>
                   )}
                 </button>
-
                 {motifs.map((m) => (
                   <button
                     key={m.id}
@@ -598,7 +517,7 @@ export default function SimulasiEditor() {
                       src={m.image_url}
                       alt={m.name}
                       fill
-                      className="object-cover p-1"
+                      className="object-cover p-1 dark:invert"
                       sizes="(max-width: 768px) 33vw, 20vw"
                     />
                     {config.motif?.id === m.id && (
@@ -613,8 +532,7 @@ export default function SimulasiEditor() {
                 ))}
               </div>
             </div>
-
-            {/* 3. UKURAN MOTIF */}
+            {/* 3. SIZE & WARNA */}
             {config.motif && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                 <Label className="text-xs font-semibold uppercase text-zinc-500 flex items-center gap-1">
@@ -644,15 +562,12 @@ export default function SimulasiEditor() {
                 </div>
               </div>
             )}
-
             <Separator />
-
-            {/* 4. WARNA */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs font-semibold uppercase text-zinc-500">
-                    Warna Kain Dasar
+                    Warna Kain
                   </Label>
                   <div
                     className="w-4 h-4 rounded-full border shadow-sm"
@@ -677,7 +592,6 @@ export default function SimulasiEditor() {
                   ))}
                 </div>
               </div>
-
               <div
                 className={cn(
                   "space-y-2",
@@ -686,7 +600,7 @@ export default function SimulasiEditor() {
               >
                 <div className="flex justify-between items-center">
                   <Label className="text-xs font-semibold uppercase text-zinc-500">
-                    Warna Corak Motif
+                    Warna Motif
                   </Label>
                   <div
                     className="w-4 h-4 rounded-full border shadow-sm"
@@ -727,7 +641,6 @@ export default function SimulasiEditor() {
 
   return (
     <section className="bg-zinc-50 dark:bg-black min-h-screen flex flex-col relative overflow-hidden">
-      {/* Script Midtrans (Penting!) */}
       <Script
         src={process.env.NEXT_PUBLIC_MIDTRANS_URL}
         strategy="afterInteractive"
@@ -754,7 +667,6 @@ export default function SimulasiEditor() {
             </p>
           </div>
         </div>
-
         <div className="flex gap-2 items-center">
           <Button
             size="sm"
@@ -791,12 +703,12 @@ export default function SimulasiEditor() {
 
       {/* GRID UTAMA */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 pt-16 h-screen">
-        {/* KIRI */}
+        {/* PANEL KIRI (DESKTOP) */}
         <div className="hidden lg:block lg:col-span-3 border-r bg-white dark:bg-zinc-950 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
           <ConfigPanel type="atasan" title="Atasan (Kemeja)" />
         </div>
 
-        {/* TENGAH (MODEL) */}
+        {/* TENGAH (CANVAS) */}
         <div
           ref={canvasRef}
           className="col-span-1 lg:col-span-6 relative bg-zinc-200 dark:bg-zinc-900 overflow-hidden cursor-move active:cursor-grabbing select-none group"
@@ -807,7 +719,6 @@ export default function SimulasiEditor() {
         >
           <div className="absolute inset-0 opacity-[0.03] bg-[url('/file.svg')] bg-repeat space-x-2" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-300/20 dark:to-black/40 pointer-events-none" />
-
           <div className="w-full h-full flex items-center justify-center">
             <div
               style={{
@@ -829,7 +740,6 @@ export default function SimulasiEditor() {
               {renderLayer("bottom")}
             </div>
           </div>
-
           <div className="absolute bottom-32 lg:bottom-12 right-6 flex flex-col gap-2 bg-white/90 dark:bg-zinc-800/90 p-1.5 rounded-xl shadow-xl border border-white/20 backdrop-blur">
             <Button
               size="icon"
@@ -873,14 +783,74 @@ export default function SimulasiEditor() {
           </div>
         </div>
 
-        {/* KANAN */}
+        {/* PANEL KANAN (DESKTOP) */}
         <div className="hidden lg:block lg:col-span-3 border-l bg-white dark:bg-zinc-950 z-20 shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
           <ConfigPanel type="bawahan" title="Bawahan (Celana/Rok)" />
         </div>
       </div>
 
-      {/* FLOATING CHECKOUT */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 animate-in slide-in-from-bottom-10 fade-in duration-500">
+      {/* --- MOBILE CONTROLS (BARU: HANYA TAMPIL DI HP) --- */}
+      <div className="lg:hidden fixed bottom-28 left-4 right-4 z-30 flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-lg border-zinc-200 dark:border-zinc-800"
+          onClick={() => setActiveMobileTab("atasan")}
+        >
+          <Shirt className="w-4 h-4 mr-2 text-amber-600" /> Edit Atasan
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-lg border-zinc-200 dark:border-zinc-800"
+          onClick={() => setActiveMobileTab("bawahan")}
+        >
+          <Layers className="w-4 h-4 mr-2 text-amber-600" /> Edit Bawahan
+        </Button>
+      </div>
+
+      {/* --- MOBILE DRAWER / SLIDE UP PANEL (BARU) --- */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out h-[65vh] flex flex-col border-t dark:border-zinc-800",
+          activeMobileTab ? "translate-y-0" : "translate-y-full"
+        )}
+      >
+        {/* Drawer Handle & Header */}
+        <div className="p-4 border-b dark:border-zinc-800 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-2">
+            {activeMobileTab === "atasan" ? (
+              <Shirt className="w-5 h-5 text-amber-600" />
+            ) : (
+              <Layers className="w-5 h-5 text-amber-600" />
+            )}
+            <span className="font-bold text-lg">
+              {activeMobileTab === "atasan" ? "Edit Atasan" : "Edit Bawahan"}
+            </span>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setActiveMobileTab(null)}
+            className="rounded-full"
+          >
+            <ChevronDown className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Drawer Content */}
+        <div className="flex-1 overflow-hidden relative">
+          {activeMobileTab && <ConfigPanel type={activeMobileTab} title="" />}
+        </div>
+      </div>
+
+      {/* FLOATING CHECKOUT (Geser dikit kalau di Mobile biar ga ketutupan tombol edit) */}
+      <div
+        className={cn(
+          "fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-full max-w-sm px-4 animate-in slide-in-from-bottom-10 fade-in duration-500 transition-all",
+          activeMobileTab
+            ? "opacity-0 pointer-events-none translate-y-20"
+            : "opacity-100" // Sembunyikan checkout saat lagi ngedit di mobile
+        )}
+      >
         <button
           onClick={() => setShowCheckoutModal(true)}
           className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full shadow-2xl p-2 pl-6 pr-2 flex items-center justify-between group hover:scale-[1.02] transition-transform border border-zinc-700/50"
@@ -899,27 +869,25 @@ export default function SimulasiEditor() {
         </button>
       </div>
 
-      {/* MODAL CHECKOUT */}
+      {/* MODAL CHECKOUT (Sama seperti sebelumnya) */}
       <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
         <DialogContent className="sm:max-w-md bg-white dark:bg-zinc-900">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-amber-600" />
-              Konfirmasi Pesanan
+              <ShoppingCart className="w-5 h-5 text-amber-600" /> Konfirmasi
+              Pesanan
             </DialogTitle>
             <DialogDescription>Periksa kembali pesanan Anda.</DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 space-y-3 border">
-              {/* Atasan Detail */}
               <div className="flex justify-between items-start text-sm">
                 <div>
                   <p className="font-bold flex items-center gap-2">
                     <Shirt className="w-3 h-3" /> Atasan
                   </p>
                   <p className="text-zinc-500 text-xs mt-1">
-                    {topConfig.material?.name}
+                    {topConfig.material?.name}{" "}
                     {topConfig.motif
                       ? `, ${topConfig.motif.name}`
                       : ", Tanpa Motif"}
@@ -943,17 +911,14 @@ export default function SimulasiEditor() {
                   {formatRupiah(calculatePartPrice(topConfig))}
                 </span>
               </div>
-
               <Separator />
-
-              {/* Bawahan Detail */}
               <div className="flex justify-between items-start text-sm">
                 <div>
                   <p className="font-bold flex items-center gap-2">
                     <Layers className="w-3 h-3" /> Bawahan
                   </p>
                   <p className="text-zinc-500 text-xs mt-1">
-                    {bottomConfig.material?.name}
+                    {bottomConfig.material?.name}{" "}
                     {bottomConfig.motif
                       ? `, ${bottomConfig.motif.name}`
                       : ", Tanpa Motif"}
@@ -978,7 +943,6 @@ export default function SimulasiEditor() {
                 </span>
               </div>
             </div>
-
             <div className="flex items-center justify-between px-2">
               <Label>Jumlah Pesanan</Label>
               <div className="flex items-center gap-3 border rounded-md px-1 bg-white dark:bg-black">
@@ -1002,7 +966,6 @@ export default function SimulasiEditor() {
               </div>
             </div>
           </div>
-
           <DialogFooter className="flex-col sm:flex-col gap-2">
             <div className="flex justify-between items-center w-full mb-2 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-100 dark:border-amber-800">
               <span className="text-sm font-semibold text-amber-900 dark:text-amber-400">
