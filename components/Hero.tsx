@@ -4,7 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Layers, Palette, Scissors, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Layers,
+  Palette,
+  Scissors,
+  Sparkles,
+  BookOpen,
+} from "lucide-react"; // Tambah Icon BookOpen
 import { motion, AnimatePresence } from "framer-motion";
 
 const DEMO_LOOKS = [
@@ -49,6 +56,7 @@ export default function Hero() {
 
       <div className="container mx-auto px-6 h-full flex items-center">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
+          {/* TEKS KIRI */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -75,24 +83,38 @@ export default function Hero() {
               motif tradisional nusantara dengan gaya modern secara real-time.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+            {/* TOMBOL ACTION (UPDATED) */}
+            <div className="flex flex-wrap items-center gap-4 justify-center lg:justify-start">
               <Button
                 size="lg"
-                className="rounded-full h-14 px-8 bg-amber-600 hover:bg-amber-700 text-white text-base shadow-lg shadow-amber-900/20 w-full sm:w-auto"
+                className="rounded-full h-14 px-8 bg-amber-600 hover:bg-amber-700 text-white text-base shadow-lg shadow-amber-900/20 w-full sm:w-auto transition-all hover:scale-105"
                 asChild
               >
                 <Link href="/simulasi">
-                  Mulai Desain Sekarang
+                  Mulai Desain
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
+
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full h-14 px-8 border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur w-full sm:w-auto"
+                className="rounded-full h-14 px-8 border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur w-full sm:w-auto hover:bg-white dark:hover:bg-zinc-800 transition-all"
                 asChild
               >
-                <Link href="/gallery">Lihat Galeri Motif</Link>
+                <Link href="/gallery">Lihat Galeri</Link>
+              </Button>
+
+              {/* TOMBOL BARU: TENTANG KAMI */}
+              <Button
+                size="lg"
+                variant="ghost"
+                className="rounded-full h-14 px-6 text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 w-full sm:w-auto transition-colors"
+                asChild
+              >
+                <Link href="/about">
+                  <BookOpen className="mr-2 h-4 w-4" /> Tentang Kami
+                </Link>
               </Button>
             </div>
 
@@ -118,6 +140,7 @@ export default function Hero() {
             </div>
           </motion.div>
 
+          {/* VISUAL KANAN */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -188,8 +211,11 @@ export default function Hero() {
                         maskImage: `url('/images/pria/mask-bottom.png')`,
                         WebkitMaskImage: `url('/images/pria/mask-bottom.png')`,
                         maskSize: "contain",
+                        WebkitMaskSize: "contain",
                         maskPosition: "bottom",
+                        WebkitMaskPosition: "bottom",
                         maskRepeat: "no-repeat",
+                        WebkitMaskRepeat: "no-repeat",
                       }}
                     />
                     <Image
